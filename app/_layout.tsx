@@ -5,16 +5,14 @@ import { StatusBar } from "expo-status-bar";
 export default function Layout() {
     return (
         <TaskProvider>
+            <StatusBar style="light" />
             <Stack>
-                <StatusBar
-                style={"light"}
-                />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen
                     name="TaskList"
                     options={{
                         headerShown: false,
-                        presentation: "modal"
+                        presentation: "modal",
                     }}
                 />
                 <Stack.Screen

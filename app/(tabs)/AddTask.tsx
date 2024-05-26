@@ -128,14 +128,44 @@ export default function AddTask() {
       );
     });
 
-    // 重複する場合は適切な disp 値を設定
     if (overlappingTasks.length > 0) {
-      const maxDisp = Math.max(...overlappingTasks.map((task) => task.disp));
-      newTask.disp = maxDisp + 1;
+      const sortedDispValues = overlappingTasks
+        .map((task, index) => ({ disp: task.disp, id: task.id, index }))
+        .sort((a, b) => {
+          if (a.disp === b.disp) {
+            // dispが同じ場合はidでソート
+            return a.id.localeCompare(b.id);
+          } else {
+            // dispが異なる場合はdispでソート
+            return a.disp - b.disp;
+          }
+        })
+        .map(({ disp }) => disp);
+  
+      const uniqueDispValues = sortedDispValues.filter((value, index, self) => self.indexOf(value) === index);
+  
+      let nextDisp = 0;
+      const missingValues = [];
+  
+      for (let i = 0; i < uniqueDispValues.length; i++) {
+        if (uniqueDispValues[i] !== i) {
+          nextDisp = i;
+          missingValues.push(...Array.from({ length: uniqueDispValues[i] - i }, (_, j) => i + j));
+          break;
+        }
+      }
+  
+      // 上記のループでnextDispが更新されなかった場合は、連続した値になっている
+      // その場合は、uniqueDispValuesの最後の値に1を加えた値がnextDispとなる
+      if (nextDisp === 0) {
+        nextDisp = uniqueDispValues[uniqueDispValues.length - 1] + 1;
+      }
+  
+      newTask.disp = missingValues.length > 0 ? missingValues.shift()! : nextDisp;
     } else {
-      // 重複しない場合は disp を 0 のままにする
       newTask.disp = 0;
     }
+
 
     await addTask(newTask);
 

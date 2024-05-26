@@ -122,36 +122,45 @@ export default function EditTask() {
       const taskStartDate = new Date(task.startdate.split(' ')[0]);
       const taskEndDate = new Date(task.enddate.split(' ')[0]);
     
-      return (
-        (taskStartDate >= newStartDate && taskStartDate <= newEndDate) || // タスクの開始日がnewStartDateとnewEndDateの間にある
-        (taskEndDate >= newStartDate && taskEndDate <= newEndDate) || // タスクの終了日がnewStartDateとnewEndDateの間にある
-        (taskStartDate <= newStartDate && taskEndDate >= newEndDate) // タスクの期間がnewStartDateとnewEndDateの期間を完全に含む
-      );
+      return ((taskStartDate <= newEndDate && taskEndDate >= newStartDate));
     });
+    console.log(overlappingTasks)
     
     if (overlappingTasks.length > 0) {
-      console.log(overlappingTasks.length);
-      const sortedDispValues = overlappingTasks.map((task) => task.disp).sort((a, b) => a - b);
-      let nextDisp = -1; // 初期値としてあり得ない値を設定
-    
-      console.log("Before loop, nextDisp:", nextDisp);
-      for (let i = 0; i < sortedDispValues.length; i++) {
-          console.log("Loop index:", i, "sortedDispValues[i]:", sortedDispValues[i]);
-          if (sortedDispValues[i] !== i) {
-              nextDisp = i;
-              console.log("Mismatch found at index:", i, "nextDisp set to:", nextDisp);
-              break;
+      const sortedDispValues = overlappingTasks
+        .map((task, index) => ({ disp: task.disp, id: task.id, index }))
+        .sort((a, b) => {
+          if (a.disp === b.disp) {
+            // dispが同じ場合はidでソート
+            return a.id.localeCompare(b.id);
+          } else {
+            // dispが異なる場合はdispでソート
+            return a.disp - b.disp;
           }
+        })
+        .map(({ disp }) => disp);
+  
+      const uniqueDispValues = sortedDispValues.filter((value, index, self) => self.indexOf(value) === index);
+  
+      let nextDisp = 0;
+      const missingValues = [];
+  
+      for (let i = 0; i < uniqueDispValues.length; i++) {
+        if (uniqueDispValues[i] !== i) {
+          nextDisp = i;
+          missingValues.push(...Array.from({ length: uniqueDispValues[i] - i }, (_, j) => i + j));
+          break;
+        }
       }
-    
-      // ループが終了した後で、nextDisp が更新されていない場合の処理
-      if (nextDisp === -1) {
-          nextDisp = sortedDispValues.length;
+  
+      // 上記のループでnextDispが更新されなかった場合は、連続した値になっている
+      // その場合は、uniqueDispValuesの最後の値に1を加えた値がnextDispとなる
+      if (nextDisp === 0) {
+        nextDisp = uniqueDispValues[uniqueDispValues.length - 1] + 1;
       }
-      console.log("After loop, nextDisp:", nextDisp);
-      updatedTask.disp = nextDisp;
+  
+      updatedTask.disp = missingValues.length > 0 ? missingValues.shift()! : nextDisp;
     } else {
-      console.log(overlappingTasks.length);
       updatedTask.disp = 0;
     }
     
